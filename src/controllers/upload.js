@@ -7,7 +7,7 @@ module.exports.uploadStart = (req, res) => {
   res.status(200).send({ session_id: Math.round(Math.random() * 10 ** 10) });
 };
 
-module.exports.uploadAppend = async (req, res) => {
+module.exports.uploadAppend = appendUpload = async (req, res) => {
   const { data, session_id, index } = req.body;
   const tempFilePath = `videos/tmp/${session_id}/${index}.tmp`;
   const filePath = path.join(__dirname, tempFilePath); // __dirname gives you the current directory
@@ -19,7 +19,9 @@ module.exports.uploadAppend = async (req, res) => {
     await fs.outputFile(filePath, buffer);
   });
 
-  res.status(200).send({ session_id });
+  return { session_id };
+  x;
+  // res.status(200).send({ session_id });
 };
 
 module.exports.uploadFinish = async (req, res) => {
@@ -66,35 +68,32 @@ module.exports.uploadFinish = async (req, res) => {
   });
 };
 
-// module.exports.uploadTestFile = async (req, res) => {
-//   const session_id = Math.round(Math.random() * 10 ** 10);
-//   const form = formidable({});
-//   try {
-//     const [fields, files] = await form.parse(req);
-//     const { size, filepath } = files.data[0];
-//     let chunks = 0;
-//     const chunckSize = 5 * 1024 * 1024;
+module.exports.uploadTestFile = async (req, res) => {
+  const form = formidable({});
+  try {
+    const [fields, files] = await form.parse(req);
+    const { size, filepath } = files.data[0];
+    const session_id = fields.session_id[0];
+    let chunks = 0;
+    const chunckSize = 5 * 1024 * 1024;
 
-//     while (chunks * chunckSize < size) {
-//       const start = chunks * chunckSize;
-//       const end = start + chunckSize - 1;
-//       const readstream = fs.createReadStream(filepath, {
-//         start,
-//         end,
-//       });
+    while (chunks * chunckSize < size) {
+      const start = chunks * chunckSize;
+      const end = start + chunckSize - 1;
+      const readstream = fs.createReadStream(filepath, {
+        start,
+        end,
+      });
 
-//       await appendUpload(
-//         { body: { data: readstream, session_id, index: chunks } },
-//         res
-//       );
-//       chunks++;
-//     }
-
-//     const mockReq = { body: { session_id: 3438179087, index: chunks } };
-//     await finishUpload(mockReq, res);
-//     res.sendStatus(200);
-//   } catch (error) {
-//     console.log(error);
-//     res.sendStatus(500);
-//   }
-// };
+      await appendUpload(
+        { body: { data: readstream, session_id, index: chunks } },
+        res
+      );
+      chunks++;
+    }
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+};
